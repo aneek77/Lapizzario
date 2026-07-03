@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>La Pizzario — Staff Order Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Work+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1C1310; --maroon:#7A1F1F; --ember:#C0392B; --gold:#C9A227;
+    --parchment:#F4EAD6; --paper-line:#D8C6A1; --basil:#42593B; --smoke:#6B5D51; --cream:#F7F1E4;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; font-family:'Work Sans',sans-serif; background:var(--parchment); color:var(--ink);}
+  header{background:var(--ink); color:var(--cream); padding:18px 28px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;}
+  header h1{font-family:'Fraunces',serif; font-size:1.3rem; margin:0;}
+  header .sub{font-family:'JetBrains Mono',monospace; font-size:0.68rem; color:var(--gold); letter-spacing:2px;}
+  .wrap{max-width:1100px; margin:0 auto; padding:24px;}
+
+  /* login */
+  .login-box{max-width:380px; margin:80px auto; background:#fff; border:1px solid var(--paper-line); border-radius:12px; padding:32px; text-align:center; box-shadow:0 10px 30px rgba(0,0,0,0.1);}
+  .login-box h2{font-family:'Fraunces',serif; color:var(--maroon); margin-top:0;}
+  .login-box input{width:100%; padding:12px; border:1.5px solid var(--paper-line); border-radius:8px; font-size:1rem; margin:14px 0;}
+  .login-box button{width:100%; background:var(--ember); color:#fff; border:none; padding:13px; border-radius:8px; font-weight:700; font-size:1rem; cursor:pointer;}
+  .login-err{color:var(--ember); font-size:0.85rem; display:none;}
+
+  /* stats */
+  .stats{display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:24px;}
+  @media(max-width:700px){.stats{grid-template-columns:1fr 1fr;}}
+  .stat{background:#fff; border:1px solid var(--paper-line); border-radius:10px; padding:18px; text-align:center;}
+  .stat b{display:block; font-size:1.8rem; font-family:'Fraunces',serif; color:var(--maroon);}
+  .stat span{font-size:0.72rem; text-transform:uppercase; letter-spacing:1px; color:var(--smoke); font-family:'JetBrains Mono',monospace;}
+
+  /* orders */
+  .toolbar{display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:10px;}
+  .toolbar select{padding:8px 12px; border:1.5px solid var(--paper-line); border-radius:8px; background:#fff;}
+  .refresh{background:var(--maroon); color:#fff; border:none; padding:9px 18px; border-radius:8px; cursor:pointer; font-weight:600;}
+  .order-card{background:#fff; border:1px solid var(--paper-line); border-left:5px solid var(--gold); border-radius:10px; padding:18px 22px; margin-bottom:14px;}
+  .order-card.status-RECEIVED{border-left-color:var(--ember);}
+  .order-card.status-PREPARING{border-left-color:var(--gold);}
+  .order-card.status-OUT_FOR_DELIVERY{border-left-color:#3b6ea5;}
+  .order-card.status-DELIVERED{border-left-color:var(--basil); opacity:0.75;}
+  .order-card.status-CANCELLED{border-left-color:#999; opacity:0.55;}
+  .oc-head{display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; margin-bottom:10px;}
+  .oc-id{font-family:'JetBrains Mono',monospace; font-weight:600; color:var(--maroon);}
+  .oc-time{font-size:0.78rem; color:var(--smoke);}
+  .badge{display:inline-block; padding:4px 12px; border-radius:14px; font-size:0.7rem; font-weight:700; letter-spacing:0.5px; font-family:'JetBrains Mono',monospace;}
+  .badge.RECEIVED{background:#fde8e6; color:var(--ember);}
+  .badge.AWAITING_PAYMENT{background:#eee; color:#777;}
+  .badge.PREPARING{background:#fdf3d7; color:#9a7b12;}
+  .badge.OUT_FOR_DELIVERY{background:#e2edf8; color:#3b6ea5;}
+  .badge.DELIVERED{background:#e5efe2; color:var(--basil);}
+  .badge.CANCELLED{background:#eee; color:#888;}
+  .badge.pay-online{background:#e5efe2; color:var(--basil);}
+  .badge.pay-cod{background:#fdf3d7; color:#9a7b12;}
+  .badge.pay-upi{background:#ece2f8; color:#5b3b8a;}
+  .oc-grid{display:grid; grid-template-columns:1.2fr 1fr; gap:16px;}
+  @media(max-width:700px){.oc-grid{grid-template-columns:1fr;}}
+  .oc-items{font-size:0.9rem; line-height:1.7;}
+  .oc-items b{color:var(--maroon);}
+  .oc-cust{font-size:0.86rem; line-height:1.7; background:var(--parchment); border-radius:8px; padding:12px;}
+  .oc-actions{display:flex; gap:8px; flex-wrap:wrap; margin-top:14px; align-items:center;}
+  .oc-actions button{border:none; padding:8px 14px; border-radius:8px; cursor:pointer; font-weight:600; font-size:0.82rem;}
+  .b-prep{background:var(--gold); color:var(--ink);}
+  .b-out{background:#3b6ea5; color:#fff;}
+  .b-done{background:var(--basil); color:#fff;}
+  .b-cancel{background:#eee; color:#777;}
+  .oc-actions input{padding:8px 10px; border:1.5px solid var(--paper-line); border-radius:8px; font-size:0.82rem; width:130px;}
+  .empty{text-align:center; padding:60px 20px; color:var(--smoke);}
+  .total-amt{font-family:'JetBrains Mono',monospace; font-weight:700; color:var(--maroon); font-size:1.05rem;}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>La Pizzario — Order Dashboard</h1>
+    <div class="sub">STAFF ONLY</div>
+  </div>
+  <div id="headRight" style="display:none;">
+    <button class="refresh" onclick="loadOrders()">🔄 Refresh</button>
+  </div>
+</header>
+
+<!-- LOGIN -->
+<div class="login-box" id="loginBox">
+  <h2>Staff Login</h2>
+  <div id="fileWarning" style="display:none; background:#fde8e6; color:#7A1F1F; border-radius:8px; padding:14px; font-size:0.85rem; line-height:1.6; text-align:left; margin-bottom:10px;">
+    ⚠️ <b>You opened this file directly.</b> The dashboard only works through the running server, because that's where orders are stored.<br><br>
+    <b>How to open it correctly (Windows):</b><br>
+    1. Open the <b>lapizzario-app</b> folder<br>
+    2. Double-click <b>START-SERVER.bat</b><br>
+    3. The dashboard opens automatically at <b>http://localhost:3000/dashboard.html</b><br>
+    <span style="font-size:0.8em;">(Mac: run start-server.sh · Needs Node.js from nodejs.org, one-time install)</span>
+  </div>
+  <p style="color:var(--smoke); font-size:0.9rem;">Enter the staff password to view incoming orders.</p>
+  <input type="password" id="staffPass" placeholder="Staff password" onkeydown="if(event.key==='Enter')login()">
+  <div class="login-err" id="loginErr">Wrong password, try again.</div>
+  <div class="login-err" id="serverErr" style="color:#9a7b12;">⚠️ Can't reach the server. Is it running? Open this page via http://localhost:3000/dashboard.html — not as a file.</div>
+  <button onclick="login()">Open Dashboard</button>
+</div>
+
+<!-- DASHBOARD -->
+<div class="wrap" id="dashboard" style="display:none;">
+  <div class="stats">
+    <div class="stat"><b id="stToday">0</b><span>Orders Today</span></div>
+    <div class="stat"><b id="stActive">0</b><span>Active Orders</span></div>
+    <div class="stat"><b id="stRevenue">₹0</b><span>Today's Revenue</span></div>
+    <div class="stat"><b id="stAll">0</b><span>All-Time Orders</span></div>
+  </div>
+
+  <div class="toolbar">
+    <select id="filterStatus" onchange="render()">
+      <option value="">All statuses</option>
+      <option value="RECEIVED">Received (new!)</option>
+      <option value="PREPARING">Preparing</option>
+      <option value="OUT_FOR_DELIVERY">Out for delivery</option>
+      <option value="DELIVERED">Delivered</option>
+      <option value="CANCELLED">Cancelled</option>
+    </select>
+    <span style="font-size:0.8rem; color:var(--smoke);">Auto-refreshes every 30 seconds · New orders play a sound</span>
+  </div>
+
+  <div id="orderList"></div>
+</div>
+
+<script>
+  const API_BASE = location.protocol === 'file:' ? 'http://localhost:3000' : '';
+  let PASS = '';
+  let allOrders = [];
+  let knownIds = new Set();
+  let firstLoad = true;
+
+  // Warn immediately if opened as a file instead of through the server
+  if(location.protocol === 'file:'){
+    document.getElementById('fileWarning').style.display = 'block';
+  }
+
+  function login(){
+    PASS = document.getElementById('staffPass').value;
+    document.getElementById('loginErr').style.display = 'none';
+    document.getElementById('serverErr').style.display = 'none';
+    loadOrders(true);
+  }
+
+  async function loadOrders(isLogin){
+    try{
+      const res = await fetch(API_BASE + '/api/staff/orders', { headers: { 'x-staff-pass': PASS } });
+      if(res.status === 401){
+        document.getElementById('loginErr').style.display = 'block';
+        return;
+      }
+      allOrders = await res.json();
+
+      if(isLogin){
+        document.getElementById('loginBox').style.display = 'none';
+        document.getElementById('dashboard').style.display = 'block';
+        document.getElementById('headRight').style.display = 'block';
+      }
+
+      // New-order sound alert
+      const newOnes = allOrders.filter(o => !knownIds.has(o.orderId));
+      if(!firstLoad && newOnes.length > 0) beep();
+      allOrders.forEach(o => knownIds.add(o.orderId));
+      firstLoad = false;
+
+      render();
+    } catch(e){
+      console.error(e);
+      // Server unreachable — tell the user instead of failing silently
+      const errEl = document.getElementById('serverErr');
+      if(errEl && document.getElementById('loginBox').style.display !== 'none'){
+        errEl.style.display = 'block';
+      }
+    }
+  }
+
+  function beep(){
+    try{
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.frequency.value = 880; g.gain.value = 0.3;
+      o.start(); setTimeout(()=>{o.stop();}, 350);
+    }catch(e){}
+  }
+
+  function render(){
+    const filter = document.getElementById('filterStatus').value;
+    const list = document.getElementById('orderList');
+    const shown = filter ? allOrders.filter(o => o.status === filter) : allOrders;
+
+    // stats
+    const today = new Date().toDateString();
+    const todays = allOrders.filter(o => new Date(o.timestamp).toDateString() === today && o.status !== 'CANCELLED' && o.status !== 'AWAITING_PAYMENT');
+    document.getElementById('stToday').textContent = todays.length;
+    document.getElementById('stActive').textContent = allOrders.filter(o => ['RECEIVED','PREPARING','OUT_FOR_DELIVERY'].includes(o.status)).length;
+    document.getElementById('stRevenue').textContent = '₹' + todays.reduce((s,o)=>s+o.total,0);
+    document.getElementById('stAll').textContent = allOrders.filter(o => o.status !== 'AWAITING_PAYMENT').length;
+
+    if(shown.length === 0){
+      list.innerHTML = '<div class="empty">No orders here yet. New orders appear automatically. 🍕</div>';
+      return;
+    }
+
+    list.innerHTML = shown.map(o => {
+      const items = o.items.map(it => `${it.qty}x ${it.name}${it.size ? ' ('+it.size+')' : ''} — ₹${it.lineTotal}`).join('<br>');
+      const t = new Date(o.timestamp).toLocaleString('en-IN');
+      const driver = o.driver ? `<br>🏍️ Driver: <b>${o.driver.name}</b> ${o.driver.phone ? '('+o.driver.phone+')' : ''}` : '';
+      let payBadge;
+      if(o.payMethod === 'online'){
+        payBadge = '<span class="badge pay-online">💳 PAID ONLINE</span>';
+      } else if(o.payMethod === 'upi'){
+        const ref = o.payment && o.payment.upiRef ? ' · Ref: ' + o.payment.upiRef : '';
+        const claimed = o.payment && o.payment.customerClaimedPaid;
+        payBadge = `<span class="badge pay-upi">📱 UPI — ${claimed ? 'VERIFY IN YOUR UPI APP' + ref : 'CUSTOMER NOT CONFIRMED YET'}</span>`;
+      } else {
+        payBadge = '<span class="badge pay-cod">💵 CASH ON DELIVERY</span>';
+      }
+      return `
+      <div class="order-card status-${o.status}">
+        <div class="oc-head">
+          <div><span class="oc-id">${o.orderId}</span> &nbsp; <span class="badge ${o.status}">${o.status.replace(/_/g,' ')}</span>
+          ${payBadge}</div>
+          <div class="oc-time">${t}</div>
+        </div>
+        <div class="oc-grid">
+          <div class="oc-items"><b>Items</b><br>${items}<br><span class="total-amt">Total: ₹${o.total}</span></div>
+          <div class="oc-cust">
+            👤 <b>${o.customer.name}</b><br>
+            📞 <a href="tel:${o.customer.phone}">${o.customer.phone}</a><br>
+            📧 ${o.customer.email}<br>
+            📍 ${o.customer.address}<br>
+            🏪 Branch: <b>${o.customer.branch}</b>${driver}
+          </div>
+        </div>
+        <div class="oc-actions">
+          <button class="b-prep" onclick="setStatus('${o.orderId}','PREPARING')">👨‍🍳 Preparing</button>
+          <input id="dn-${o.orderId}" placeholder="Driver name">
+          <input id="dp-${o.orderId}" placeholder="Driver phone">
+          <button class="b-out" onclick="setStatus('${o.orderId}','OUT_FOR_DELIVERY', true)">🏍️ Out for Delivery</button>
+          <button class="b-done" onclick="setStatus('${o.orderId}','DELIVERED')">✅ Delivered</button>
+          <button class="b-cancel" onclick="setStatus('${o.orderId}','CANCELLED')">Cancel</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  async function setStatus(orderId, status, withDriver){
+    const body = { status };
+    if(withDriver){
+      body.driverName = document.getElementById('dn-'+orderId)?.value || '';
+      body.driverPhone = document.getElementById('dp-'+orderId)?.value || '';
+    }
+    await fetch(API_BASE + '/api/staff/orders/' + orderId + '/status', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'x-staff-pass': PASS },
+      body: JSON.stringify(body)
+    });
+    loadOrders();
+  }
+
+  setInterval(() => { if(PASS && document.getElementById('dashboard').style.display !== 'none') loadOrders(); }, 30000);
+</script>
+</body>
+</html>
