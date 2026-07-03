@@ -287,6 +287,33 @@ const MIME = { '.html':'text/html', '.css':'text/css', '.js':'application/javasc
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, 'http://localhost');
   const route = req.method + ' ' + url.pathname;
+  // Serve homepage
+if (url.pathname === '/' || url.pathname === '/index.html') {
+  const filePath = path.join(PUBLIC_DIR, 'index.html');
+
+  if (fs.existsSync(filePath)) {
+    res.writeHead(200, { 'Content-Type': 'text/html' });
+    fs.createReadStream(filePath).pipe(res);
+  } else {
+    res.writeHead(404);
+    res.end('index.html not found');
+  }
+  return;
+}
+
+// Serve dashboard
+if (url.pathname === '/dashboard.html') {
+  const filePath = path.join(PUBLIC_DIR, 'dashboard.html');
+
+  if (fs.existsSync(filePath)) {
+    res.writeHead(200, { 'Content-Type': 'text/html' });
+    fs.createReadStream(filePath).pipe(res);
+  } else {
+    res.writeHead(404);
+    res.end('dashboard.html not found');
+  }
+  return;
+}
 
   // CORS — lets the site work even when opened as a file:// during local testing
   res.setHeader('Access-Control-Allow-Origin', '*');
