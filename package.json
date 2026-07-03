@@ -1,0 +1,12 @@
+{
+  "name": "la-pizzario-orders",
+  "version": "2.0.0",
+  "description": "La Pizzario website with real online ordering, payments and email receipts — zero dependencies",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

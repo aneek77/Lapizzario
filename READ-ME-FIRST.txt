@@ -1,0 +1,42 @@
+════════════════════════════════════════════════════════
+  LA PIZZARIO — HOW TO START (read this first!)
+════════════════════════════════════════════════════════
+
+STEP 0 — EXTRACT THIS ZIP FIRST! (very important)
+   Right-click the zip file → "Extract All..." → Extract.
+   Do NOT open files from inside the zip — nothing will work.
+
+STEP 1 — Install Node.js (one time only)
+   Go to https://nodejs.org → download the LTS version →
+   install it (Next → Next → Finish).
+
+STEP 2 — Start the server
+   Open the extracted "lapizzario-app" folder and
+   double-click:  START-SERVER.bat
+   (Mac users: run start-server.sh in Terminal instead)
+
+   A black window opens — KEEP IT OPEN. That window IS your
+   order server. Your dashboard opens in the browser
+   automatically.
+
+STEP 3 — Log in to the dashboard
+   Password: pizzario123
+   (Change it later in the .env file — see SETUP-GUIDE.md)
+
+That's it. The website is at http://localhost:3000 and the
+dashboard at http://localhost:3000/dashboard.html
+
+──────────────────────────────────────────────────────────
+COMMON MISTAKES:
+ ✗ Opening dashboard.html by double-clicking the file
+   → It only works via http://localhost:3000/dashboard.html
+ ✗ Opening files from inside the zip without extracting
+ ✗ Closing the black server window while taking orders
+
+WANT ONLINE PAYMENTS & EMAIL RECEIPTS?
+ → See SETUP-GUIDE.md (Razorpay + Gmail setup, ~30 min)
+ → Until then, Cash on Delivery orders work out of the box.
+
+WANT IT ON THE REAL INTERNET (not just your computer)?
+ → See "Put it online" in SETUP-GUIDE.md (free on Render.com)
+════════════════════════════════════════════════════════
