@@ -78,6 +78,7 @@
     <div class="sub">STAFF ONLY</div>
   </div>
   <div id="headRight" style="display:none;">
+    <button class="refresh" style="background:var(--basil); margin-right:8px;" onclick="testEmail()">📧 Test Email</button>
     <button class="refresh" onclick="loadOrders()">🔄 Refresh</button>
   </div>
 </header>
@@ -244,6 +245,18 @@
         </div>
       </div>`;
     }).join('');
+  }
+
+  async function testEmail(){
+    const to = prompt('Send a test email to which address?');
+    if(!to) return;
+    try{
+      const res = await fetch(API_BASE + '/api/staff/test-email?to=' + encodeURIComponent(to), { headers: { 'x-staff-pass': PASS } });
+      const d = await res.json();
+      alert(d.ok ? '✅ ' + d.message : '❌ ' + d.error);
+    }catch(e){
+      alert('❌ Could not reach the server: ' + e.message);
+    }
   }
 
   async function setStatus(orderId, status, withDriver){
