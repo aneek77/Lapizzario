@@ -147,11 +147,18 @@ function createRazorpayOrder(amountPaise, receipt){
 function emailConfigured(){
   return !!(process.env.SMTP_USER && process.env.SMTP_PASS);
 }
+// Extract a readable message even from AggregateError (empty-message network failures)
+function errText(e){
+  if(e && e.errors && e.errors.length) return e.errors.map(x => x.code || x.message || String(x)).join(' | ');
+  return (e && (e.message || e.code)) || String(e);
+}
 function sendMail(to, subject, htmlBody){
   return new Promise((resolve, reject) => {
     if(!emailConfigured()) return resolve(false);
     const user = process.env.SMTP_USER, pass = process.env.SMTP_PASS.replace(/\s+/g, '');
-    const socket = tls.connect(465, 'smtp.gmail.com', { servername: 'smtp.gmail.com' });
+    // family:4 forces IPv4 — some hosts (incl. Render) can't route IPv6 to Gmail,
+    // which fails with a blank AggregateError.
+    const socket = tls.connect({ host: 'smtp.gmail.com', port: 465, servername: 'smtp.gmail.com', family: 4 });
     let buffer = '';
     const steps = [
       { expect: 220, send: () => 'EHLO lapizzario.local\r\n' },
@@ -252,7 +259,7 @@ async function sendOrderEmails(order){
   try {
     await sendMail(order.customer.email, `Order Confirmed — ${order.orderId} — La Pizzario 🍕`, html);
     console.log(`   📧 Receipt sent to ${order.customer.email}`);
-  } catch(e){ console.error('   ❌ Customer email failed:', e.message); }
+  } catch(e){ console.error('   ❌ Customer email failed:', errText(e)); }
   try {
     const notifyTo = process.env.RESTAURANT_EMAIL || process.env.SMTP_USER;
     const staffHtml = html + `<div style="margin-top:16px;padding:12px;background:#fff3cd;border-radius:8px;font-family:sans-serif;">
@@ -260,7 +267,7 @@ async function sendOrderEmails(order){
       <b>Open the staff dashboard to manage this order.</b></div>`;
     await sendMail(notifyTo, `🔔 NEW ORDER ${order.orderId} — ${order.customer.branch} — ₹${order.total} (${order.payMethod.toUpperCase()})`, staffHtml);
     console.log(`   📧 Alert sent to restaurant (${notifyTo})`);
-  } catch(e){ console.error('   ❌ Restaurant email failed:', e.message); }
+  } catch(e){ console.error('   ❌ Restaurant email failed:', errText(e)); }
 }
 
 // ---------------------------------------------------------------
@@ -411,6 +418,21 @@ const server = http.createServer(async (req, res) => {
     if(url.pathname.startsWith('/api/staff/')){
       if(req.headers['x-staff-pass'] !== STAFF_PASSWORD)
         return json(res, 401, { error: 'Wrong password' });
+
+      // Diagnostic: try sending a test email and report the exact result
+      if(route === 'GET /api/staff/test-email'){
+        const to = url.searchParams.get('to');
+        if(!to) return json(res, 400, { ok:false, error: 'Add ?to=your@email.com' });
+        if(!emailConfigured())
+          return json(res, 200, { ok:false, error: 'SMTP_USER / SMTP_PASS not set on the server. Add them in Render → Environment (or .env locally) and restart.' });
+        try {
+          await sendMail(to, 'Test email — La Pizzario order system ✅',
+            '<div style="font-family:sans-serif;padding:20px;"><h2>It works! 🍕</h2><p>Your La Pizzario server can send emails. Customer receipts and order alerts will be delivered.</p></div>');
+          return json(res, 200, { ok:true, message: `Test email sent to ${to}. If it's not in the inbox, CHECK THE SPAM FOLDER.` });
+        } catch(e){
+          return json(res, 200, { ok:false, error: 'Sending failed: ' + errText(e) });
+        }
+      }
 
       if(route === 'GET /api/staff/orders')
         return json(res, 200, loadOrders().slice().reverse());
