@@ -145,14 +145,45 @@ function createRazorpayOrder(amountPaise, receipt){
 // Uses smtp.gmail.com:465 (TLS) with an App Password
 // ---------------------------------------------------------------
 function emailConfigured(){
-  return !!(process.env.SMTP_USER && process.env.SMTP_PASS);
+  return !!(process.env.BREVO_API_KEY || (process.env.SMTP_USER && process.env.SMTP_PASS));
 }
 // Extract a readable message even from AggregateError (empty-message network failures)
 function errText(e){
   if(e && e.errors && e.errors.length) return e.errors.map(x => x.code || x.message || String(x)).join(' | ');
   return (e && (e.message || e.code)) || String(e);
 }
+
+// ---- Brevo HTTP API (port 443) — works on hosts like Render that block SMTP ports ----
+function sendViaBrevo(to, subject, htmlBody){
+  return new Promise((resolve, reject) => {
+    const from = process.env.EMAIL_FROM || process.env.SMTP_USER || 'no-reply@lapizzario.local';
+    const body = JSON.stringify({
+      sender: { name: 'La Pizzario', email: from },
+      to: [{ email: to }],
+      subject,
+      htmlContent: htmlBody
+    });
+    const req = https.request({
+      hostname: 'api.brevo.com', path: '/v3/smtp/email', method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body), 'api-key': process.env.BREVO_API_KEY }
+    }, res => {
+      let data = '';
+      res.on('data', c => data += c);
+      res.on('end', () => {
+        if(res.statusCode >= 200 && res.statusCode < 300) return resolve(true);
+        try { reject(new Error(JSON.parse(data).message || ('Brevo error ' + res.statusCode))); }
+        catch { reject(new Error('Brevo error ' + res.statusCode + ': ' + data.slice(0,200))); }
+      });
+    });
+    req.on('error', reject);
+    req.setTimeout(20000, () => { req.destroy(); reject(new Error('Brevo API timeout')); });
+    req.write(body); req.end();
+  });
+}
+
 function sendMail(to, subject, htmlBody){
+  // Prefer the HTTPS API when configured (required on Render); fall back to Gmail SMTP (works on local PCs)
+  if(process.env.BREVO_API_KEY) return sendViaBrevo(to, subject, htmlBody);
   return new Promise((resolve, reject) => {
     if(!emailConfigured()) return resolve(false);
     const user = process.env.SMTP_USER, pass = process.env.SMTP_PASS.replace(/\s+/g, '');
@@ -486,5 +517,6 @@ server.listen(PORT, () => {
   console.log(`   Website:         http://localhost:${PORT}`);
   console.log(`   Staff dashboard: http://localhost:${PORT}/dashboard.html  (password: ${STAFF_PASSWORD === 'pizzario123' ? 'pizzario123 — CHANGE THIS in .env!' : 'set in .env ✅'})`);
   console.log(`   Razorpay: ${razorpayConfigured() ? '✅ configured' : '❌ not configured (only Cash on Delivery will work)'}`);
-  console.log(`   Email:    ${emailConfigured() ? '✅ configured' : '❌ not configured (no receipts will be sent)'}\n`);
+  const emailMode = process.env.BREVO_API_KEY ? '✅ Brevo HTTPS API (works everywhere)' : (emailConfigured() ? '⚠️ Gmail SMTP (works on PC; BLOCKED on Render — set BREVO_API_KEY there)' : '❌ not configured (no receipts will be sent)');
+  console.log(`   Email:    ${emailMode}\n`);
 });
